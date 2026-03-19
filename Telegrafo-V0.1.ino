@@ -4,7 +4,8 @@
  * MÓDULO: Transceptor Bidireccional
  * DESCRIPCIÓN: Implementación de comunicación punto a punto, estructurada 
  * bajo el Modelo de Interconexión de Sistemas Abiertos (OSI).
- * * AUTORES (EQUIPO DE DESARROLLO):
+ * 
+ * AUTORES (EQUIPO DE DESARROLLO):
  * - David Aguilar
  * - Valeria Tocarruncho
  * - Oscar Roa
@@ -26,6 +27,24 @@ int estadoBoton = LOW;
 int ultimoEstadoBoton = LOW;
 unsigned long ultimoTiempoRebote = 0;
 const unsigned long RETARDO_REBOTE = 50; 
+
+// Función de debouncing
+int leerBotonDebounce() {
+  int lectura = digitalRead(PIN_BOTON);
+
+  if (lectura != ultimoEstadoBoton) {
+    ultimoTiempoRebote = millis();
+  }
+
+  if ((millis() - ultimoTiempoRebote) > RETARDO_REBOTE) {
+    if (lectura != estadoBoton) {
+      estadoBoton = lectura;
+    }
+  }
+
+  ultimoEstadoBoton = lectura;
+  return estadoBoton;
+}
 
 // [PENDIENTE - Tarea 2.3] Parámetros de temporización para el protocolo Morse.
 // [PENDIENTE - Fase 3] Máquinas de estado para tramado de datos.
@@ -64,26 +83,15 @@ void loop() {
   // --------------------------------------------------------
   // PROCESAMIENTO DE SALIDA (TX)
   // --------------------------------------------------------
-  int lecturaActual = digitalRead(PIN_BOTON);
-
-  if (lecturaActual != ultimoEstadoBoton) {
-    ultimoTiempoRebote = millis();
-  }
-
-  if ((millis() - ultimoTiempoRebote) > RETARDO_REBOTE) {
-    if (lecturaActual != estadoBoton) {
-      estadoBoton = lecturaActual; 
-      digitalWrite(PIN_TX, estadoBoton); 
-    }
-  }
-  ultimoEstadoBoton = lecturaActual; 
+  int botonEstable = leerBotonDebounce(); // Capa 2
+  digitalWrite(PIN_TX, botonEstable);     // Capa 1
 
   // --------------------------------------------------------
   // PROCESAMIENTO DE ENTRADA (RX)
   // --------------------------------------------------------
   int senalEntrante = digitalRead(PIN_RX);
   
-  if (senalEntrante == HIGH || estadoBoton == HIGH) {
+  if (senalEntrante == HIGH || botonEstable == HIGH) {
     digitalWrite(PIN_LED, HIGH);
     digitalWrite(PIN_BUZZER, HIGH);
   } else {
