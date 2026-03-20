@@ -67,7 +67,17 @@ int leerBotonDebounce() {
 // CAPA 6: PRESENTACIÓN (Traducción y Codificación)
 // ========================================================
 // [PENDIENTE - Tarea 2.3] Lógica de traducción alfanumérica a secuencias Morse.
+// Unidad base (ajustable experimentalmente)
+const unsigned long TIEMPO_PUNTO = 200;
 
+// Umbrales de decisión
+const unsigned long UMBRAL_PUNTO_RAYA = TIEMPO_PUNTO * 2;
+const unsigned long UMBRAL_FIN_LETRA = TIEMPO_PUNTO * 3;
+const unsigned long UMBRAL_FIN_PALABRA = TIEMPO_PUNTO * 7;
+
+// Variables simbólicas (resultado de la capa 6)
+char simboloActual = '\0';   // '.', '-', ' ', '/'
+bool haySimboloNuevo = false;
 // ========================================================
 // CAPA 7: APLICACIÓN (Interfaz Humano-Máquina)
 // ========================================================
@@ -87,23 +97,82 @@ void setup() {
   digitalWrite(PIN_LED, LOW);
 }
 
-void loop() {
-  // --------------------------------------------------------
-  // PROCESAMIENTO DE SALIDA (TX)
-  // --------------------------------------------------------
-  int botonEstable = leerBotonDebounce(); // Capa 2
-  digitalWrite(PIN_TX, botonEstable);     // Capa 1
 
-  // --------------------------------------------------------
-  // PROCESAMIENTO DE ENTRADA (RX)
-  // --------------------------------------------------------
-  int senalEntrante = digitalRead(PIN_RX);
-  
-  if (senalEntrante == HIGH || botonEstable == HIGH) {
-    digitalWrite(PIN_LED, HIGH);
-    digitalWrite(PIN_BUZZER, HIGH);
-  } else {
-    digitalWrite(PIN_LED, LOW);
-    digitalWrite(PIN_BUZZER, LOW);
+void loop() {
+
+  // --- CAPA 7: INTERFAZ HUMANO-MÁQUINA ---
+  if (haySimboloNuevo) {
+
+    if (simboloActual == '.') {
+      digitalWrite(PIN_LED, HIGH);
+      digitalWrite(PIN_BUZZER, HIGH);
+    } 
+    else if (simboloActual == '-') {
+      digitalWrite(PIN_LED, HIGH);
+      digitalWrite(PIN_BUZZER, HIGH);
+    } 
+    else {
+      digitalWrite(PIN_LED, LOW);
+      digitalWrite(PIN_BUZZER, LOW);
+    }
+
+    haySimboloNuevo = false;
   }
-}
+// --------------------------------------------------------
+// PROCESAMIENTO DE SALIDA (TX)
+// --------------------------------------------------------
+  int lecturaActual = digitalRead(PIN_BOTON);
+
+  if (lecturaActual != ultimoEstadoBoton) {
+    ultimoTiempoRebote = millis();
+  }
+
+  if ((millis() - ultimoTiempoRebote) > RETARDO_REBOTE) {
+    if (lecturaActual != estadoBoton) {
+      estadoBoton = lecturaActual; 
+      digitalWrite(PIN_TX, estadoBoton); 
+    }
+  }
+  ultimoEstadoBoton = lecturaActual; 
+
+// --------------------------------------------------------
+// PROCESAMIENTO DE ENTRADA (RX)
+// --------------------------------------------------------
+
+  int estadoActualRX = digitalRead(PIN_RX);
+
+  if (estadoActualRX == HIGH && estadoAnteriorRX == LOW) {
+    tiempoInicioPulso = millis();
+  }
+
+  if (estadoActualRX == LOW && estadoAnteriorRX == HIGH) {
+    duracionPulso = millis() - tiempoInicioPulso;
+    tiempoUltimaSenal = millis();
+
+    // Señal lista para interpretación (Capa 6)
+    if (duracionPulso < UMBRAL_PUNTO_RAYA) {
+      simboloActual = '.';
+    } else {
+      simboloActual = '-';
+    }
+    haySimboloNuevo = true;
+  }
+
+  // Medición de silencios
+  if (estadoActualRX == LOW) {
+    duracionSilencio = millis() - tiempoUltimaSenal;
+
+    if (duracionSilencio > UMBRAL_FIN_PALABRA) {
+      simboloActual = '/';  // espacio palabra
+      haySimboloNuevo = true;
+      tiempoUltimaSenal = millis();
+    } 
+    else if (duracionSilencio > UMBRAL_FIN_LETRA) {
+      simboloActual = ' ';  // espacio letra
+      haySimboloNuevo = true;
+      tiempoUltimaSenal = millis();
+    }
+  }
+
+  estadoAnteriorRX = estadoActualRX;
+  }
