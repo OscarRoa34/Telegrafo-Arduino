@@ -16,7 +16,7 @@
 // ========================================================
 // CAPA 1: FÍSICA (Hardware, Medio y Señales)
 // ========================================================
-const int PIN_BOTON  = 2;
+const int PIN_BOTON  = 4;
 const int PIN_TX     = 8;
 const int PIN_RX     = 9;
 
@@ -54,7 +54,6 @@ int leerBotonDebounce() {
   return estadoBoton;
 }
 
-// [PENDIENTE - Tarea 2.3] Parámetros de temporización para el protocolo Morse.
 // [PENDIENTE - Fase 3] Máquinas de estado para tramado de datos.
 
 // ========================================================
@@ -97,27 +96,8 @@ void setup() {
   digitalWrite(PIN_LED, LOW);
 }
 
-
 void loop() {
 
-  // --- CAPA 7: INTERFAZ HUMANO-MÁQUINA ---
-  if (haySimboloNuevo) {
-
-    if (simboloActual == '.') {
-      digitalWrite(PIN_LED, HIGH);
-      digitalWrite(PIN_BUZZER, HIGH);
-    } 
-    else if (simboloActual == '-') {
-      digitalWrite(PIN_LED, HIGH);
-      digitalWrite(PIN_BUZZER, HIGH);
-    } 
-    else {
-      digitalWrite(PIN_LED, LOW);
-      digitalWrite(PIN_BUZZER, LOW);
-    }
-
-    haySimboloNuevo = false;
-  }
 // --------------------------------------------------------
 // PROCESAMIENTO DE SALIDA (TX)
 // --------------------------------------------------------
@@ -134,6 +114,7 @@ void loop() {
     }
   }
   ultimoEstadoBoton = lecturaActual; 
+
 
 // --------------------------------------------------------
 // PROCESAMIENTO DE ENTRADA (RX)
@@ -175,4 +156,27 @@ void loop() {
   }
 
   estadoAnteriorRX = estadoActualRX;
+
+
+// --------------------------------------------------------
+// CAPA 7: APLICACIÓN (SALIDA)
+// --------------------------------------------------------
+
+  // 🔹 Feedback inmediato (como versión original)
+  int senalEntrante = digitalRead(PIN_RX);
+
+  if (estadoBoton == HIGH || senalEntrante == HIGH) {
+    digitalWrite(PIN_LED, HIGH);
+    digitalWrite(PIN_BUZZER, HIGH);
+  } 
+  else {
+    digitalWrite(PIN_LED, LOW);
+    digitalWrite(PIN_BUZZER, LOW);
   }
+
+  // 🔹 Eventos interpretados (se mantiene para lógica Morse)
+  if (haySimboloNuevo) {
+    haySimboloNuevo = false;
+  }
+
+}
