@@ -28,6 +28,14 @@ int ultimoEstadoBoton = LOW;
 unsigned long ultimoTiempoRebote = 0;
 const unsigned long RETARDO_REBOTE = 50; 
 
+int estadoAnteriorRX = LOW;
+
+unsigned long tiempoInicioPulso = 0;
+unsigned long duracionPulso = 0;
+
+unsigned long tiempoUltimaSenal = 0;
+unsigned long duracionSilencio = 0;
+
 // Función de debouncing
 int leerBotonDebounce() {
   int lectura = digitalRead(PIN_BOTON);
